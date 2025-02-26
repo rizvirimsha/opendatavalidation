@@ -1,34 +1,31 @@
-
+import streamlit as st
 import pandas as pd
-import ipywidgets as widgets
-from IPython.display import display
 
-# Create an upload widget
-upload_widget = widgets.FileUpload(accept='.csv', multiple=False)
-display(upload_widget)
+# Streamlit UI for file upload
+st.title("CSV Duplicate Checker")
 
-def load_data(upload_widget):
-    if upload_widget.value:
-        uploaded_file = list(upload_widget.value.values())[0]
-        file_name = uploaded_file['metadata']['name']
-        content = uploaded_file['content']
+uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
 
-        # Read CSV into a pandas DataFrame
-        try:
-            df = pd.read_csv(content, encoding='utf-8')
-        except UnicodeDecodeError:
-            df = pd.read_csv(content, encoding='latin-1')
+if uploaded_file is not None:
+    try:
+        df = pd.read_csv(uploaded_file, encoding="utf-8")
+    except UnicodeDecodeError:
+        df = pd.read_csv(uploaded_file, encoding="latin-1")
 
-        # Mark duplicates
-        df['Delete'] = df.duplicated(keep='first').map({True: 'Delete', False: ''})
+    # Mark duplicates
+    df["Delete"] = df.duplicated(keep="first").map({True: "Delete", False: ""})
 
-        # Save the modified file
-        df.to_csv('duplicates-file-odc.csv', index=False)
-        print("Duplicates marked and saved in duplicates-file-odc.csv")
+    # Save the modified file
+    output_filename = "duplicates-file-odc.csv"
+    df.to_csv(output_filename, index=False)
 
-# Button to trigger file processing
-process_button = widgets.Button(description="Process File")
-process_button.on_click(lambda x: load_data(upload_widget))
-display(process_button)
+    st.write("Duplicates marked. Preview below:")
+    st.dataframe(df.head())  # Show a preview of the data
 
-
+    # Provide a download link
+    st.download_button(
+        label="Download Processed CSV",
+        data=df.to_csv(index=False),
+        file_name=output_filename,
+        mime="text/csv"
+    )
